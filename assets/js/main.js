@@ -302,6 +302,52 @@
     aberto && aberto.focus();
   }));
 
+  /* Medição (Google Tag Manager): cada ação importante vira um evento no dataLayer */
+  const medir = (evento, dados = {}) => { (window.dataLayer = window.dataLayer || []).push({ event: evento, ...dados }); };
+  const texto = el => (el.textContent || '').replace(/\s+/g, ' ').trim().slice(0, 80);
+
+  document.addEventListener('click', e => {
+    const link = e.target.closest('a[href*="wa.me"]');
+    if (!link) return;
+    if (link.matches('[data-enviar]')) {
+      const fd = new FormData($('[data-form]'));
+      medir('agendamento_whatsapp', {
+        tipo_cliente: fd.get('tipo') === 'empresa' ? 'empresa' : 'particular',
+        exames: fd.getAll('exames[]').join(', '),
+        colaboradores: fd.get('colaboradores') || ''
+      });
+      return;
+    }
+    if (link.matches('[data-diag-whats]')) {
+      medir('diagnostico_whatsapp', { itens_em_dia: Number($('[data-placar]').textContent) || 0 });
+      return;
+    }
+    let origem = 'conteudo';
+    if (link.closest('.whats-flutuante')) origem = 'botao_flutuante';
+    else if (link.closest('.topo')) origem = 'menu';
+    else if (link.closest('.rodape')) origem = 'rodape';
+    else if (link.closest('.nr-painel')) origem = 'treinamento_' + link.closest('.nr-painel').id.replace('det-', '');
+    else if (link.closest('.painel')) origem = 'programa_' + link.closest('.painel').id.replace('p-', '');
+    else if (link.closest('section[id]')) origem = link.closest('section[id]').id;
+    medir('clique_whatsapp', { origem, texto_botao: texto(link) });
+  });
+
+  $$('[data-agendar]').forEach(l => l.addEventListener('click', () => medir('agendar_exame_card', { exame: l.dataset.agendar })));
+  $$('.abas__lista [role="tab"]').forEach(t => t.addEventListener('click', () => medir('ver_programa', { programa: texto($('b', t)) })));
+  $$('.exame').forEach(d => d.addEventListener('toggle', () => { if (d.open) medir('ver_exame', { exame: texto($('.exame__nome', d)) }); }));
+  $$('.nr').forEach(b => b.addEventListener('click', () => { if (b.getAttribute('aria-expanded') === 'true') medir('ver_treinamento', { treinamento: texto($('b', b)) + ' ' + texto($('span', b)) }); }));
+
+  const diagForm = $('[data-diag]');
+  if (diagForm) {
+    let concluido = false;
+    diagForm.addEventListener('change', () => {
+      const respostas = $$('input[type="radio"]:checked', diagForm);
+      if (concluido || respostas.length < $$('.diag__lista li', diagForm).length) return;
+      concluido = true;
+      medir('diagnostico_concluido', { itens_em_dia: respostas.filter(r => r.value === 'sim').length });
+    });
+  }
+
   const ano = $('[data-ano]');
   if (ano) ano.textContent = new Date().getFullYear();
 })();
