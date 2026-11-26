@@ -606,6 +606,10 @@ ul, ol { margin: 0; padding: 0; list-style: none; }
 .chips input:focus-visible + span { outline: 3px solid var(--verde); outline-offset: 2px; }
 .form__rodape { display: flex; flex-wrap: wrap; align-items: center; gap: 16px 20px; margin-top: 4px; }
 .form__status { margin: 0; font-size: var(--t-sm); font-weight: 500; }
+.form__dica { margin: 0; display: flex; align-items: center; gap: 10px; font-size: var(--t-sm); color: var(--muted); }
+.form__dica::before { content: ""; flex: none; width: 8px; height: 8px; border-radius: 50%; background: #f0b43c; }
+.form__enviar:not([hidden]) { animation: surge .5s cubic-bezier(.34, 1.56, .64, 1); }
+@keyframes surge { from { opacity: 0; transform: translateY(10px) scale(.96); } }
 .form__status.ok { color: var(--verde-esc); }
 .form__status.falha { color: #c03636; }
 .form__status a { color: inherit; font-weight: 700; }

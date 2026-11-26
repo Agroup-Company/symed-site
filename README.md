@@ -1,13 +1,12 @@
 # SYMED - Medicina e Segurança do Trabalho
 
 Site institucional (one-page) da SYMED, em Andradas-MG.
-HTML, CSS e JavaScript puros, sem etapa de build, mais um `enviar.php` para o formulário.
+HTML, CSS e JavaScript puros, sem etapa de build. O formulário de agendamento envia pelo WhatsApp da clínica, com a mensagem já preenchida.
 
 ## Estrutura
 
 ```
 index.html            página
-enviar.php            recebe o formulário e envia por e-mail (PHP mail)
 .htaccess             HTTPS, cache, compressão, segurança
 .cpanel.yml           deploy automático pelo Git do cPanel
 robots.txt / sitemap.xml
@@ -22,17 +21,10 @@ assets/img/           logo SYMED em SVG (cor, branco, azul), símbolo, fotos, pa
 npx http-server -p 5180 -c-1
 ```
 
-O formulário só envia de verdade no servidor (PHP). Localmente ele mostra o link de envio pelo WhatsApp como alternativa.
 
 ## Antes de publicar
 
-1. O formulário envia por SMTP na conta atendimento@sym.med.br (Titan). A senha fica fora do repositório, no servidor, em `/home2/limase07/symed-smtp.php`:
-   ```php
-   <?php
-   return ['senha' => 'SENHA_DO_EMAIL'];
-   ```
-   Se a senha do e-mail mudar, atualize esse arquivo.
-2. Faça backup do WordPress atual (cPanel > Backup) e mova os arquivos antigos de `public_html` para uma pasta, por exemplo `public_html/_wp-antigo`.
+1. Faça backup do WordPress atual (cPanel > Backup) e mova os arquivos antigos de `public_html` para uma pasta, por exemplo `public_html/_wp-antigo`.
 
 ## Deploy na HostGator (cPanel > Git™ Version Control)
 

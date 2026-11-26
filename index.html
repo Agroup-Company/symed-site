@@ -21,7 +21,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@500;600;700&family=Barlow:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
 <link rel="preload" as="image" href="assets/img/colaborador-hero.webp" fetchpriority="high">
-<link rel="stylesheet" href="assets/css/style.css?v=6">
+<link rel="stylesheet" href="assets/css/style.css?v=7">
 <script>document.documentElement.classList.add('js')</script>
 <script type="application/ld+json">
 {
@@ -607,7 +607,7 @@
   <div class="wrap contato__grid">
     <div class="contato__info">
       <h2 class="titulo">Agende exames ou fale com um especialista</h2>
-      <p class="lead">Preencha o formulário e retornamos para confirmar data e horário. Se preferir, chame direto no WhatsApp.</p>
+      <p class="lead">Preencha os dados e envie sua solicitação pelo WhatsApp, com tudo já escrito. A equipe responde por lá para confirmar data e horário.</p>
       <ul class="contato__canais">
         <li><a href="https://wa.me/553599520315" target="_blank" rel="noopener"><svg><use href="#i-whats"/></svg><span><small>WhatsApp</small>(35) 99952-0315</span></a></li>
         <li><a href="https://maps.google.com/?q=Av.+Dr.+Bias+Fortes,+164+-+Centro,+Andradas+-+MG" target="_blank" rel="noopener"><svg><use href="#i-pin"/></svg><span><small>Clínica</small>Av. Dr. Bias Fortes, 164, sala 8 (subsolo), Centro, Andradas-MG</span></a></li>
@@ -617,7 +617,7 @@
       </div>
     </div>
 
-    <form class="form" action="enviar.php" method="post" data-form novalidate>
+    <form class="form" data-form novalidate>
       <fieldset class="form__tipo">
         <legend>Quem vai fazer os exames?</legend>
         <label><input type="radio" name="tipo" value="empresa" checked><span>Minha empresa</span></label>
@@ -625,10 +625,6 @@
       </fieldset>
       <div class="form__linha">
         <label class="campo"><span>Nome completo</span><input name="nome" autocomplete="name" required></label>
-        <label class="campo"><span>WhatsApp</span><input name="whatsapp" type="tel" inputmode="tel" autocomplete="tel" placeholder="(35) 9 0000-0000" required data-tel></label>
-      </div>
-      <div class="form__linha">
-        <label class="campo"><span>E-mail</span><input name="email" type="email" autocomplete="email" required></label>
         <label class="campo" data-so-empresa><span>Empresa</span><input name="empresa" autocomplete="organization"></label>
       </div>
       <div class="form__linha" data-so-empresa>
@@ -664,10 +660,10 @@
         </div>
       </fieldset>
       <label class="campo"><span>Mensagem <em>(opcional)</em></span><textarea name="mensagem" rows="3" placeholder="Ex.: nomes dos colaboradores, horários ou o que mais precisar"></textarea></label>
-      <label class="hp" aria-hidden="true">Não preencha<input name="site" tabindex="-1" autocomplete="off"></label>
-      <div class="form__rodape">
-        <button class="btn btn--verde btn--lg" type="submit" data-enviar>Enviar solicitação</button>
-        <p class="form__status" data-status role="status"></p>
+      <div class="form__rodape" aria-live="polite">
+        <p class="form__dica" data-dica></p>
+        <a class="btn btn--verde btn--lg form__enviar" href="https://wa.me/553599520315" target="_blank" rel="noopener" data-enviar hidden><svg><use href="#i-whats"/></svg> Enviar pelo WhatsApp</a>
+        <p class="form__status" data-status></p>
       </div>
     </form>
   </div>
@@ -708,6 +704,6 @@
   <svg><use href="#i-whats"/></svg><span>Fale conosco</span>
 </a>
 
-<script src="assets/js/main.js?v=6" defer></script>
+<script src="assets/js/main.js?v=7" defer></script>
 </body>
 </html>

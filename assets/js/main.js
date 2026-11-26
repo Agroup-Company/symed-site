@@ -203,81 +203,66 @@
     diag.addEventListener('submit', e => e.preventDefault());
   }
 
-  /* Formulário de agendamento */
+  /* Formulário de agendamento: envia pelo WhatsApp com tudo preenchido */
   const form = $('[data-form]');
   if (form) {
     const status = $('[data-status]');
     const enviar = $('[data-enviar]');
+    const dica = $('[data-dica]');
     const soEmpresa = $$('[data-so-empresa]', form);
-    const tel = $('[data-tel]', form);
-
-    form.addEventListener('change', e => {
-      if (e.target.name === 'tipo') soEmpresa.forEach(el => el.hidden = e.target.value !== 'empresa');
-    });
-    tel.addEventListener('input', () => {
-      const d = tel.value.replace(/\D/g, '').slice(0, 11);
-      let v = d;
-      if (d.length > 2) v = `(${d.slice(0, 2)}) ${d.slice(2)}`;
-      if (d.length > 7) v = `(${d.slice(0, 2)}) ${d.slice(2, d.length - 4)}-${d.slice(-4)}`;
-      tel.value = v;
-    });
     const data = $('input[type="date"]', form);
     if (data) data.min = new Date().toISOString().slice(0, 10);
 
-    const erro = (campo, texto) => {
-      const label = campo.closest('.campo');
-      label.classList.add('erro');
-      if (!$('.msg-erro', label)) label.insertAdjacentHTML('beforeend', `<small class="msg-erro">${texto}</small>`);
-    };
-    form.addEventListener('input', e => {
-      const label = e.target.closest('.campo.erro');
-      if (label) { label.classList.remove('erro'); $('.msg-erro', label)?.remove(); }
-    });
-
-    const mensagemWhats = fd => {
+    const montarMensagem = fd => {
+      const empresa = fd.get('tipo') === 'empresa';
+      const exames = fd.getAll('exames[]');
+      const obs = String(fd.get('mensagem') || '').trim();
       const linhas = [
-        'Olá! Gostaria de agendar pelo site da SYMED.',
-        `Nome: ${fd.get('nome')}`,
-        fd.get('empresa') ? `Empresa: ${fd.get('empresa')}` : '',
-        fd.get('colaboradores') ? `Colaboradores: ${fd.get('colaboradores')}` : '',
-        fd.getAll('exames[]').length ? `Exames: ${fd.getAll('exames[]').join(', ')}` : '',
-        fd.get('data') ? `Data de preferência: ${fd.get('data').split('-').reverse().join('/')}` : '',
-        fd.get('mensagem') ? `Obs.: ${fd.get('mensagem')}` : ''
-      ].filter(Boolean);
+        'Olá! Gostaria de agendar exames pelo site da SYMED.',
+        '',
+        `*Nome:* ${String(fd.get('nome')).trim()}`,
+        empresa ? `*Empresa:* ${String(fd.get('empresa')).trim()}` : '*Tipo:* Colaborador / particular',
+        empresa && fd.get('colaboradores') ? `*Colaboradores:* ${fd.get('colaboradores')}` : null,
+        `*Exames:* ${exames.join(', ')}`,
+        fd.get('data') ? `*Data de preferência:* ${String(fd.get('data')).split('-').reverse().join('/')}` : null,
+        obs ? `*Observações:* ${obs}` : null
+      ].filter(l => l !== null);
       return `https://wa.me/${WHATS}?text=${encodeURIComponent(linhas.join('\n'))}`;
     };
 
-    form.addEventListener('submit', async e => {
-      e.preventDefault();
-      $$('.campo.erro', form).forEach(l => { l.classList.remove('erro'); $('.msg-erro', l)?.remove(); });
-      const nome = form.nome, wpp = form.whatsapp, email = form.email;
-      let ok = true;
-      if (nome.value.trim().length < 3) { erro(nome, 'Informe seu nome completo.'); ok = false; }
-      if (wpp.value.replace(/\D/g, '').length < 10) { erro(wpp, 'Informe um WhatsApp com DDD.'); ok = false; }
-      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.value.trim())) { erro(email, 'Informe um e-mail válido.'); ok = false; }
-      if (!ok) { $('.campo.erro input', form).focus(); return; }
-
+    const atualizar = () => {
       const fd = new FormData(form);
-      enviar.disabled = true;
-      enviar.textContent = 'Enviando…';
-      status.className = 'form__status';
+      const empresa = fd.get('tipo') === 'empresa';
+      const faltam = [];
+      if (String(fd.get('nome')).trim().length < 3) faltam.push('seu nome');
+      if (empresa && String(fd.get('empresa')).trim().length < 2) faltam.push('o nome da empresa');
+      if (!fd.getAll('exames[]').length) faltam.push('pelo menos um exame');
       status.textContent = '';
-      try {
-        const r = await fetch(form.action, { method: 'POST', body: fd, headers: { Accept: 'application/json' } });
-        const j = await r.json().catch(() => ({}));
-        if (!r.ok || !j.ok) throw new Error(j.erro || 'falha');
-        form.reset();
-        soEmpresa.forEach(el => el.hidden = false);
-        status.className = 'form__status ok';
-        status.textContent = 'Solicitação enviada. Vamos retornar pelo WhatsApp para confirmar data e horário.';
-      } catch (err) {
-        status.className = 'form__status falha';
-        status.innerHTML = `Não foi possível enviar agora. <a href="${mensagemWhats(fd)}" target="_blank" rel="noopener">Envie pelo WhatsApp</a> com os dados já preenchidos.`;
-      } finally {
-        enviar.disabled = false;
-        enviar.textContent = 'Enviar solicitação';
+      if (faltam.length) {
+        const lista = faltam.length > 1 ? faltam.slice(0, -1).join(', ') + ' e ' + faltam[faltam.length - 1] : faltam[0];
+        dica.textContent = `Para enviar, preencha ${lista}.`;
+        dica.hidden = false;
+        enviar.hidden = true;
+      } else {
+        enviar.href = montarMensagem(fd);
+        dica.hidden = true;
+        enviar.hidden = false;
       }
+    };
+
+    form.addEventListener('change', e => {
+      if (e.target.name === 'tipo') soEmpresa.forEach(el => el.hidden = e.target.value !== 'empresa');
+      atualizar();
     });
+    form.addEventListener('input', atualizar);
+    form.addEventListener('submit', e => { e.preventDefault(); if (!enviar.hidden) enviar.click(); });
+    enviar.addEventListener('click', () => {
+      setTimeout(() => {
+        status.className = 'form__status ok';
+        status.textContent = 'Abrimos o WhatsApp com a sua solicitação. É só tocar em enviar para concluir.';
+      }, 400);
+    });
+    atualizar();
   }
 
   /* Botões de WhatsApp com mensagem pronta para cada assunto */
