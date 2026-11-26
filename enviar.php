@@ -5,11 +5,11 @@
  *
  * CONFIGURE AQUI:
  *  - DESTINO: e-mail que recebe as solicitações.
- *  - REMETENTE: precisa ser um e-mail do próprio domínio (ex.: contato@sym.med.br),
+ *  - REMETENTE: precisa ser um e-mail do próprio domínio (ex.: atendimento@sym.med.br),
  *    senão a HostGator/Gmail marcam como spam.
  */
-const DESTINO   = 'contato@sym.med.br';
-const REMETENTE = 'site@sym.med.br';
+const DESTINO   = 'atendimento@sym.med.br';
+const REMETENTE = 'atendimento@sym.med.br';
 const ASSUNTO   = 'Nova solicitação pelo site SYMED';
 
 header('Content-Type: application/json; charset=utf-8');
