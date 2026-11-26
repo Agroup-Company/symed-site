@@ -26,7 +26,12 @@ O formulário só envia de verdade no servidor (PHP). Localmente ele mostra o li
 
 ## Antes de publicar
 
-1. Em `enviar.php`, ajuste `DESTINO` (quem recebe) e `REMETENTE` (precisa ser um e-mail do domínio sym.med.br, criado no cPanel).
+1. O formulário envia por SMTP na conta atendimento@sym.med.br (Titan). A senha fica fora do repositório, no servidor, em `/home2/limase07/symed-smtp.php`:
+   ```php
+   <?php
+   return ['senha' => 'SENHA_DO_EMAIL'];
+   ```
+   Se a senha do e-mail mudar, atualize esse arquivo.
 2. Faça backup do WordPress atual (cPanel > Backup) e mova os arquivos antigos de `public_html` para uma pasta, por exemplo `public_html/_wp-antigo`.
 
 ## Deploy na HostGator (cPanel > Git™ Version Control)

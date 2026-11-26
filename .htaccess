@@ -14,6 +14,7 @@ Options -Indexes
   # Bloqueia arquivos internos do repositório
   RewriteRule (^|/)\.(git|cpanel\.yml) - [F,L]
   RewriteRule ^(README\.md|\.gitignore)$ - [F,L]
+  RewriteRule (^|/)error_log$ - [F,L]
 </IfModule>
 
 # Compressão

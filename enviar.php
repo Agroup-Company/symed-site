@@ -1,16 +1,25 @@
 <?php
 /**
  * SYMED - recebe o formulário de agendamento e envia por e-mail.
- * Hospedagem: HostGator (PHP mail()).
  *
- * CONFIGURE AQUI:
- *  - DESTINO: e-mail que recebe as solicitações.
- *  - REMETENTE: precisa ser um e-mail do próprio domínio (ex.: atendimento@sym.med.br),
- *    senão a HostGator/Gmail marcam como spam.
+ * O e-mail do domínio fica no Titan, então o envio é feito por SMTP autenticado
+ * na conta do Titan (garante entrega e evita spam).
+ *
+ * A senha NÃO fica neste arquivo (o repositório é público). Ela fica em
+ * /home2/limase07/symed-smtp.php, fora da pasta do site, com o conteúdo:
+ *
+ *   <?php
+ *   return ['senha' => 'SENHA_DO_EMAIL_AQUI'];
+ *
+ * Sem esse arquivo, o formulário tenta enviar pelo mail() do servidor.
  */
-const DESTINO   = 'atendimento@sym.med.br';
-const REMETENTE = 'atendimento@sym.med.br';
-const ASSUNTO   = 'Nova solicitação pelo site SYMED';
+const DESTINO    = 'atendimento@sym.med.br';
+const REMETENTE  = 'atendimento@sym.med.br';
+const ASSUNTO    = 'Nova solicitação pelo site SYMED';
+const SMTP_HOST  = 'smtp.titan.email';
+const SMTP_PORTA = 465;
+const SMTP_USUARIO = 'atendimento@sym.med.br';
+const SMTP_CONFIG  = __DIR__ . '/../symed-smtp.php';
 
 header('Content-Type: application/json; charset=utf-8');
 header('X-Robots-Tag: noindex');
@@ -53,7 +62,7 @@ $data          = campo('data', 10);
 $mensagem      = campo('mensagem', 2000);
 $exames        = [];
 if (!empty($_POST['exames']) && is_array($_POST['exames'])) {
-    foreach (array_slice($_POST['exames'], 0, 12) as $e) {
+    foreach (array_slice($_POST['exames'], 0, 16) as $e) {
         $exames[] = mb_substr(trim(strip_tags((string) $e)), 0, 60);
     }
 }
@@ -68,35 +77,103 @@ if ($data && preg_match('/^\d{4}-\d{2}-\d{2}$/', $data)) {
 
 $wppLink = 'https://wa.me/55' . preg_replace('/\D/', '', $whatsapp);
 $linhas = [
-    'Tipo'               => $tipo,
-    'Nome'               => $nome,
-    'WhatsApp'           => $whatsapp . '  (' . $wppLink . ')',
-    'E-mail'             => $email,
-    'Empresa'            => $empresa,
-    'Colaboradores'      => $colaboradores,
-    'Exames'             => implode(', ', $exames),
-    'Data de preferência'=> $data,
-    'Mensagem'           => $mensagem,
+    'Tipo'                => $tipo,
+    'Nome'                => $nome,
+    'WhatsApp'            => $whatsapp . '  (' . $wppLink . ')',
+    'E-mail'              => $email,
+    'Empresa'             => $empresa,
+    'Colaboradores'       => $colaboradores,
+    'Exames'              => implode(', ', $exames),
+    'Data de preferência' => $data,
+    'Mensagem'            => $mensagem,
 ];
 
 $corpo = "Nova solicitação recebida pelo site:\n\n";
 foreach ($linhas as $rotulo => $valor) {
     if ($valor !== '') $corpo .= "{$rotulo}: {$valor}\n";
 }
+date_default_timezone_set('America/Sao_Paulo');
 $corpo .= "\nEnviado em " . date('d/m/Y H:i') . ' - IP ' . ($_SERVER['REMOTE_ADDR'] ?? '-');
 
-$cabecalhos = [
-    'MIME-Version: 1.0',
-    'Content-Type: text/plain; charset=UTF-8',
-    'From: SYMED Site <' . REMETENTE . '>',
-    'Reply-To: ' . $nome . ' <' . $email . '>',
-    'X-Mailer: PHP/' . phpversion(),
-];
+$assunto = ASSUNTO . ' - ' . $nome;
 
-$assunto = '=?UTF-8?B?' . base64_encode(ASSUNTO . ' - ' . $nome) . '?=';
-$enviado = @mail(DESTINO, $assunto, $corpo, implode("\r\n", $cabecalhos), '-f' . REMETENTE);
+/** Cabeçalho com acentos (RFC 2047). */
+function cab(string $texto): string {
+    return '=?UTF-8?B?' . base64_encode($texto) . '?=';
+}
+
+/** Envio por SMTP autenticado (SSL na porta 465), sem bibliotecas externas. */
+function enviar_smtp(string $senha, string $assunto, string $corpo, string $nomeCliente, string $emailCliente, string &$falha): bool {
+    $ctx = stream_context_create(['ssl' => ['verify_peer' => true, 'verify_peer_name' => true]]);
+    $fp = @stream_socket_client('ssl://' . SMTP_HOST . ':' . SMTP_PORTA, $errno, $errstr, 15, STREAM_CLIENT_CONNECT, $ctx);
+    if (!$fp) { $falha = 'conexao'; return false; }
+    stream_set_timeout($fp, 15);
+
+    $ler = function () use ($fp): string {
+        $resp = '';
+        while (($linha = fgets($fp, 515)) !== false) {
+            $resp .= $linha;
+            if (strlen($linha) < 4 || $linha[3] === ' ') break;
+        }
+        return $resp;
+    };
+    $cmd = function (string $linha, array $esperado) use ($fp, $ler, &$falha): bool {
+        if ($linha !== '') fwrite($fp, $linha . "\r\n");
+        $resp = $ler();
+        $codigo = (int) substr($resp, 0, 3);
+        if (!in_array($codigo, $esperado, true)) { $falha = 'smtp ' . $codigo; return false; }
+        return true;
+    };
+
+    $mensagem = implode("\r\n", [
+        'Date: ' . date('r'),
+        'From: ' . cab('Site SYMED') . ' <' . REMETENTE . '>',
+        'To: <' . DESTINO . '>',
+        'Reply-To: ' . cab($nomeCliente) . ' <' . $emailCliente . '>',
+        'Subject: ' . cab($assunto),
+        'Message-ID: <' . bin2hex(random_bytes(12)) . '@sym.med.br>',
+        'MIME-Version: 1.0',
+        'Content-Type: text/plain; charset=UTF-8',
+        'Content-Transfer-Encoding: base64',
+        '',
+        rtrim(chunk_split(base64_encode($corpo), 76, "\r\n")),
+    ]);
+
+    $ok = $cmd('', [220])
+        && $cmd('EHLO sym.med.br', [250])
+        && $cmd('AUTH LOGIN', [334])
+        && $cmd(base64_encode(SMTP_USUARIO), [334])
+        && $cmd(base64_encode($senha), [235])
+        && $cmd('MAIL FROM:<' . REMETENTE . '>', [250])
+        && $cmd('RCPT TO:<' . DESTINO . '>', [250, 251])
+        && $cmd('DATA', [354])
+        && $cmd($mensagem . "\r\n.", [250]);
+
+    fwrite($fp, "QUIT\r\n");
+    fclose($fp);
+    return $ok;
+}
+
+$enviado = false;
+$falha = '';
+$config = is_readable(SMTP_CONFIG) ? (include SMTP_CONFIG) : null;
+
+if (is_array($config) && !empty($config['senha'])) {
+    $enviado = enviar_smtp((string) $config['senha'], $assunto, $corpo, $nome, $email, $falha);
+} else {
+    $falha = 'sem config';
+    $cabecalhos = [
+        'MIME-Version: 1.0',
+        'Content-Type: text/plain; charset=UTF-8',
+        'From: ' . cab('Site SYMED') . ' <' . REMETENTE . '>',
+        'Reply-To: ' . cab($nome) . ' <' . $email . '>',
+    ];
+    $enviado = @mail(DESTINO, cab($assunto), $corpo, implode("\r\n", $cabecalhos), '-f' . REMETENTE);
+}
 
 if (!$enviado) {
+    // Registra só o motivo técnico (nunca dados do formulário nem senha)
+    error_log('SYMED formulario: falha no envio (' . $falha . ')');
     responder(500, ['ok' => false, 'erro' => 'Falha ao enviar o e-mail.']);
 }
 
