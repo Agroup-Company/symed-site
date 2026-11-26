@@ -348,6 +348,25 @@
     });
   }
 
+  /* Aviso de cookies (LGPD) ligado ao modo de consentimento do Google */
+  const aviso = $('[data-cookies]');
+  if (aviso) {
+    const ler = () => { try { return localStorage.getItem('symed_cookies'); } catch (e) { return null; } };
+    const salvar = v => { try { localStorage.setItem('symed_cookies', v); } catch (e) {} };
+    const decidir = aceito => {
+      const valor = aceito ? 'granted' : 'denied';
+      gtag('consent', 'update', { ad_storage: valor, ad_user_data: valor, ad_personalization: valor, analytics_storage: valor });
+      salvar(aceito ? 'aceito' : 'recusado');
+      medir('consentimento_cookies', { escolha: aceito ? 'aceito' : 'recusado' });
+      aviso.hidden = true;
+      document.body.classList.remove('com-cookies');
+    };
+    $('[data-cookies-aceitar]').addEventListener('click', () => decidir(true));
+    $('[data-cookies-recusar]').addEventListener('click', () => decidir(false));
+    $$('[data-abrir-cookies]').forEach(b => b.addEventListener('click', () => { aviso.hidden = false; document.body.classList.add('com-cookies'); $('[data-cookies-aceitar]').focus(); }));
+    if (!ler()) setTimeout(() => { aviso.hidden = false; document.body.classList.add('com-cookies'); }, 1200);
+  }
+
   const ano = $('[data-ano]');
   if (ano) ano.textContent = new Date().getFullYear();
 })();
