@@ -14,6 +14,19 @@
     setTimeout(iniciar, 1200);
   } else iniciar();
 
+  /* Hero em tela cheia: o topo do escudo acompanha o início do título */
+  const heroGrid = $('.hero__grid'), heroTitulo = $('.hero__titulo');
+  if (heroGrid && heroTitulo) {
+    const alinha = () => {
+      if (matchMedia('(max-width: 900px)').matches) return heroGrid.style.removeProperty('--topo-visual');
+      const d = heroTitulo.getBoundingClientRect().top - heroGrid.getBoundingClientRect().top;
+      heroGrid.style.setProperty('--topo-visual', Math.max(0, d - 14).toFixed(0) + 'px');
+    };
+    alinha();
+    addEventListener('resize', alinha);
+    document.fonts && document.fonts.ready.then(alinha);
+  }
+
   /* Ponto de luz do hero segue o mouse (suavizado) */
   const hero = $('.hero');
   if (hero && !reduz && matchMedia('(pointer: fine)').matches) {
@@ -95,6 +108,12 @@
     revelar.forEach(el => obs.observe(el));
   }
 
+  /* Símbolo animado do in company: roda só enquanto a seção está na tela */
+  const traco = $('[data-traco]');
+  if (traco && 'IntersectionObserver' in window) {
+    new IntersectionObserver(es => es.forEach(e => traco.classList.toggle('em-cena', e.isIntersecting)), { threshold: .15 }).observe(traco);
+  }
+
   /* Linha do tempo acompanha a rolagem */
   const linha = $('[data-linha]');
   if (linha) {
@@ -167,6 +186,7 @@
       placar.textContent = ok;
       svg.style.setProperty('--nivel', (ok / total).toFixed(3));
       escudo.dataset.estado = ok === total ? 'ok' : ok >= Math.ceil(total / 2) ? 'meio' : 'baixo';
+      placar.parentElement.classList.toggle('ok', ok === total);
       if (!respondidas) { msg.textContent = 'Responda as perguntas para ver o resultado.'; botao.hidden = true; return; }
       if (respondidas < total) {
         msg.textContent = `Faltam ${total - respondidas} ${total - respondidas === 1 ? 'pergunta' : 'perguntas'}. Até aqui, ${pendentes.length ? pendentes.length + (pendentes.length === 1 ? ' ponto precisa' : ' pontos precisam') + ' de atenção.' : 'tudo certo.'}`;
@@ -259,6 +279,43 @@
       }
     });
   }
+
+  /* Botões de WhatsApp com mensagem pronta para cada assunto */
+  $$('[data-zap]').forEach(a => { a.href = `https://wa.me/${WHATS}?text=${encodeURIComponent(a.dataset.zap)}`; });
+
+  /* "Agendar este exame": marca o exame no formulário e leva até ele */
+  $$('[data-agendar]').forEach(link => link.addEventListener('click', e => {
+    const form = $('[data-form]');
+    if (!form) return;
+    e.preventDefault();
+    const chip = $$('input[name="exames[]"]', form).find(i => i.value === link.dataset.agendar);
+    if (chip) chip.checked = true;
+    const grupo = chip ? chip.closest('.form__exames') : form;
+    $('#contato').scrollIntoView({ behavior: reduz ? 'auto' : 'smooth' });
+    grupo.classList.remove('campo--destaque');
+    void grupo.offsetWidth;
+    grupo.classList.add('campo--destaque');
+    setTimeout(() => form.nome.focus({ preventScroll: true }), reduz ? 0 : 700);
+  }));
+
+  /* Treinamentos: clicar na NR abre os detalhes */
+  const nrBotoes = $$('.nr');
+  const fecharNr = () => nrBotoes.forEach(b => { b.setAttribute('aria-expanded', 'false'); $('#' + b.getAttribute('aria-controls')).hidden = true; });
+  nrBotoes.forEach(btn => btn.addEventListener('click', () => {
+    const abrir = btn.getAttribute('aria-expanded') !== 'true';
+    fecharNr();
+    if (!abrir) return;
+    btn.setAttribute('aria-expanded', 'true');
+    const painel = $('#' + btn.getAttribute('aria-controls'));
+    painel.hidden = false;
+    const r = painel.getBoundingClientRect();
+    if (r.bottom > innerHeight || r.top < 80) painel.scrollIntoView({ behavior: reduz ? 'auto' : 'smooth', block: r.height > innerHeight - 120 ? 'start' : 'nearest' });
+  }));
+  $$('.nr-painel__fechar').forEach(b => b.addEventListener('click', () => {
+    const aberto = nrBotoes.find(n => n.getAttribute('aria-expanded') === 'true');
+    fecharNr();
+    aberto && aberto.focus();
+  }));
 
   const ano = $('[data-ano]');
   if (ano) ano.textContent = new Date().getFullYear();
