@@ -218,12 +218,12 @@
       const exames = fd.getAll('exames[]');
       const obs = String(fd.get('mensagem') || '').trim();
       const linhas = [
-        'Olá! Gostaria de agendar exames pelo site da SYMED.',
+        `Olá! Vim pelo site e gostaria de agendar ${exames.length > 1 ? 'estes exames' : 'este exame'}:`,
+        `*${exames.join(', ')}*`,
         '',
         `*Nome:* ${String(fd.get('nome')).trim()}`,
         empresa ? `*Empresa:* ${String(fd.get('empresa')).trim()}` : '*Tipo:* Colaborador / particular',
         empresa && fd.get('colaboradores') ? `*Colaboradores:* ${fd.get('colaboradores')}` : null,
-        `*Exames:* ${exames.join(', ')}`,
         fd.get('data') ? `*Data de preferência:* ${String(fd.get('data')).split('-').reverse().join('/')}` : null,
         obs ? `*Observações:* ${obs}` : null
       ].filter(l => l !== null);
