@@ -1,0 +1,265 @@
+/* SYMED - interações do site */
+(() => {
+  const root = document.documentElement;
+  const WHATS = '553599520315';
+  const $ = (s, c = document) => c.querySelector(s);
+  const $$ = (s, c = document) => [...c.querySelectorAll(s)];
+  const reduz = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  /* Entrada do hero */
+  const iniciar = () => requestAnimationFrame(() => requestAnimationFrame(() => root.classList.add('pronto')));
+  const foto = $('.hero__foto');
+  if (foto && !foto.complete) {
+    foto.addEventListener('load', iniciar, { once: true });
+    setTimeout(iniciar, 1200);
+  } else iniciar();
+
+  /* Ponto de luz do hero segue o mouse (suavizado) */
+  const hero = $('.hero');
+  if (hero && !reduz && matchMedia('(pointer: fine)').matches) {
+    let alvoX, alvoY, x, y, rodando = false;
+    const centro = () => {
+      const v = $('.hero__visual').getBoundingClientRect(), h = hero.getBoundingClientRect();
+      return [v.left - h.left + v.width / 2, v.top - h.top + v.height * .45];
+    };
+    [x, y] = [alvoX, alvoY] = centro();
+    const passo = () => {
+      x += (alvoX - x) * .08; y += (alvoY - y) * .08;
+      hero.style.setProperty('--mx', x.toFixed(1) + 'px');
+      hero.style.setProperty('--my', y.toFixed(1) + 'px');
+      if (Math.abs(alvoX - x) > .5 || Math.abs(alvoY - y) > .5) requestAnimationFrame(passo); else rodando = false;
+    };
+    const mover = (nx, ny) => { alvoX = nx; alvoY = ny; if (!rodando) { rodando = true; requestAnimationFrame(passo); } };
+    hero.addEventListener('pointermove', e => { const r = hero.getBoundingClientRect(); mover(e.clientX - r.left, e.clientY - r.top); });
+    hero.addEventListener('pointerleave', () => mover(...centro()));
+    mover(...centro());
+  }
+
+  /* Topo: sólido ao rolar, some ao descer, volta ao subir */
+  const topo = $('[data-topo]');
+  const flutuante = $('.whats-flutuante');
+  let ultimoY = scrollY;
+  const aoRolar = () => {
+    const y = scrollY;
+    topo.classList.toggle('topo--solido', y > 40);
+    const descendo = y > ultimoY && y > 600;
+    if (!document.body.classList.contains('menu-aberto')) topo.classList.toggle('topo--oculto', descendo);
+    flutuante && flutuante.classList.toggle('escondido', y < innerHeight * .6);
+    ultimoY = y;
+  };
+  addEventListener('scroll', aoRolar, { passive: true });
+  aoRolar();
+
+  /* Menu mobile */
+  const burger = $('[data-burger]');
+  const menu = $('#menu');
+  const fecharMenu = () => {
+    burger.setAttribute('aria-expanded', 'false');
+    menu.classList.remove('menu--aberto');
+    document.body.classList.remove('menu-aberto');
+    document.body.style.overflow = '';
+  };
+  burger.addEventListener('click', () => {
+    const abrir = burger.getAttribute('aria-expanded') !== 'true';
+    if (!abrir) return fecharMenu();
+    burger.setAttribute('aria-expanded', 'true');
+    menu.classList.add('menu--aberto');
+    document.body.classList.add('menu-aberto');
+    document.body.style.overflow = 'hidden';
+    topo.classList.remove('topo--oculto');
+  });
+  $$('a', menu).forEach(a => a.addEventListener('click', fecharMenu));
+  addEventListener('keydown', e => { if (e.key === 'Escape' && menu.classList.contains('menu--aberto')) { fecharMenu(); burger.focus(); } });
+  matchMedia('(min-width: 1021px)').addEventListener('change', e => e.matches && fecharMenu());
+
+  /* Link ativo no menu */
+  const links = $$('.menu ul a');
+  const secoes = links.map(a => $(a.getAttribute('href'))).filter(Boolean);
+  const obsMenu = new IntersectionObserver(entradas => {
+    entradas.forEach(en => {
+      if (!en.isIntersecting) return;
+      links.forEach(a => a.setAttribute('aria-current', a.getAttribute('href') === '#' + en.target.id ? 'true' : 'false'));
+    });
+  }, { rootMargin: '-45% 0px -50% 0px' });
+  secoes.forEach(s => obsMenu.observe(s));
+
+  /* Marquee: duplica os logos para o loop contínuo */
+  const trilho = $('.marquee__trilho');
+  if (trilho) $$('img', trilho).forEach(img => { const c = img.cloneNode(); c.alt = ''; c.setAttribute('aria-hidden', 'true'); trilho.appendChild(c); });
+
+  /* Revelação suave dos blocos */
+  const revelar = $$('.secao__topo, .sobre__intro, .abas, .diag__intro, .diag__form, .tipos-aso, .exames__grade, .incompany__foto, .incompany__texto, .nrs, .faq__grid > div, .contato__info, .form');
+  if (!reduz && 'IntersectionObserver' in window) {
+    revelar.forEach(el => el.classList.add('revela'));
+    const obs = new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting) { e.target.classList.add('visivel'); obs.unobserve(e.target); } }), { rootMargin: '0px 0px -12% 0px' });
+    revelar.forEach(el => obs.observe(el));
+  }
+
+  /* Linha do tempo acompanha a rolagem */
+  const linha = $('[data-linha]');
+  if (linha) {
+    const itens = $$('li', linha);
+    let pedido = false;
+    const atualiza = () => {
+      pedido = false;
+      const r = linha.getBoundingClientRect();
+      const alvo = innerHeight * .62;
+      const prog = Math.min(1, Math.max(0, (alvo - r.top) / r.height));
+      linha.style.setProperty('--prog', prog.toFixed(3));
+      itens.forEach(li => li.classList.toggle('ativo', li.getBoundingClientRect().top + 18 < alvo));
+    };
+    addEventListener('scroll', () => { if (!pedido) { pedido = true; requestAnimationFrame(atualiza); } }, { passive: true });
+    atualiza();
+  }
+
+  /* Abas (programas e laudos) */
+  $$('[data-abas]').forEach(box => {
+    const tabs = $$('[role="tab"]', box);
+    const ativar = (tab, foco) => {
+      tabs.forEach(t => {
+        const sel = t === tab;
+        t.setAttribute('aria-selected', sel);
+        t.tabIndex = sel ? 0 : -1;
+        $('#' + t.getAttribute('aria-controls')).hidden = !sel;
+      });
+      if (foco) tab.focus();
+      if (matchMedia('(max-width: 860px)').matches) tab.scrollIntoView({ block: 'nearest', inline: 'center', behavior: reduz ? 'auto' : 'smooth' });
+    };
+    tabs.forEach((t, i) => {
+      t.addEventListener('click', () => ativar(t));
+      t.addEventListener('keydown', e => {
+        const mapa = { ArrowDown: 1, ArrowRight: 1, ArrowUp: -1, ArrowLeft: -1 };
+        if (e.key in mapa) { e.preventDefault(); ativar(tabs[(i + mapa[e.key] + tabs.length) % tabs.length], true); }
+        if (e.key === 'Home') { e.preventDefault(); ativar(tabs[0], true); }
+        if (e.key === 'End') { e.preventDefault(); ativar(tabs[tabs.length - 1], true); }
+      });
+    });
+  });
+
+  /* Acordeões exclusivos (fallback para navegadores sem details[name]) */
+  if (!('name' in HTMLDetailsElement.prototype)) {
+    $$('details[name]').forEach(d => d.addEventListener('toggle', () => {
+      if (d.open) $$(`details[name="${d.getAttribute('name')}"]`).forEach(o => o !== d && (o.open = false));
+    }));
+  }
+
+  /* Diagnóstico de conformidade */
+  const diag = $('[data-diag]');
+  if (diag) {
+    const perguntas = $$('.diag__lista li', diag);
+    const total = perguntas.length;
+    const escudo = $('.diag__escudo');
+    const placar = $('[data-placar]');
+    const msg = $('[data-msg]');
+    const botao = $('[data-diag-whats]');
+    const svg = $('svg', escudo);
+    const atualiza = () => {
+      let ok = 0, respondidas = 0;
+      const pendentes = [];
+      perguntas.forEach(li => {
+        const r = $('input:checked', li);
+        li.classList.remove('r-sim', 'r-nao', 'r-nao-sei');
+        if (!r) return;
+        respondidas++;
+        li.classList.add('r-' + r.value);
+        if (r.value === 'sim') ok++; else pendentes.push(li.dataset.item + (r.value === 'nao-sei' ? ' (não sei)' : ''));
+      });
+      placar.textContent = ok;
+      svg.style.setProperty('--nivel', (ok / total).toFixed(3));
+      escudo.dataset.estado = ok === total ? 'ok' : ok >= Math.ceil(total / 2) ? 'meio' : 'baixo';
+      if (!respondidas) { msg.textContent = 'Responda as perguntas para ver o resultado.'; botao.hidden = true; return; }
+      if (respondidas < total) {
+        msg.textContent = `Faltam ${total - respondidas} ${total - respondidas === 1 ? 'pergunta' : 'perguntas'}. Até aqui, ${pendentes.length ? pendentes.length + (pendentes.length === 1 ? ' ponto precisa' : ' pontos precisam') + ' de atenção.' : 'tudo certo.'}`;
+      } else if (!pendentes.length) {
+        msg.textContent = 'Sua empresa parece estar em dia. Quer que a gente confirme com uma análise dos documentos?';
+      } else {
+        msg.textContent = `${pendentes.length} ${pendentes.length === 1 ? 'ponto precisa' : 'pontos precisam'} de atenção. Um especialista da SYMED pode verificar e resolver com você.`;
+      }
+      const texto = `Olá! Fiz o diagnóstico no site da SYMED.\nItens em dia: ${ok} de ${total}.` + (pendentes.length ? `\nPontos de atenção:\n- ${pendentes.join('\n- ')}` : '') + '\nGostaria de conversar com um especialista.';
+      botao.href = `https://wa.me/${WHATS}?text=${encodeURIComponent(texto)}`;
+      botao.hidden = false;
+    };
+    diag.addEventListener('change', atualiza);
+    diag.addEventListener('submit', e => e.preventDefault());
+  }
+
+  /* Formulário de agendamento */
+  const form = $('[data-form]');
+  if (form) {
+    const status = $('[data-status]');
+    const enviar = $('[data-enviar]');
+    const soEmpresa = $$('[data-so-empresa]', form);
+    const tel = $('[data-tel]', form);
+
+    form.addEventListener('change', e => {
+      if (e.target.name === 'tipo') soEmpresa.forEach(el => el.hidden = e.target.value !== 'empresa');
+    });
+    tel.addEventListener('input', () => {
+      const d = tel.value.replace(/\D/g, '').slice(0, 11);
+      let v = d;
+      if (d.length > 2) v = `(${d.slice(0, 2)}) ${d.slice(2)}`;
+      if (d.length > 7) v = `(${d.slice(0, 2)}) ${d.slice(2, d.length - 4)}-${d.slice(-4)}`;
+      tel.value = v;
+    });
+    const data = $('input[type="date"]', form);
+    if (data) data.min = new Date().toISOString().slice(0, 10);
+
+    const erro = (campo, texto) => {
+      const label = campo.closest('.campo');
+      label.classList.add('erro');
+      if (!$('.msg-erro', label)) label.insertAdjacentHTML('beforeend', `<small class="msg-erro">${texto}</small>`);
+    };
+    form.addEventListener('input', e => {
+      const label = e.target.closest('.campo.erro');
+      if (label) { label.classList.remove('erro'); $('.msg-erro', label)?.remove(); }
+    });
+
+    const mensagemWhats = fd => {
+      const linhas = [
+        'Olá! Gostaria de agendar pelo site da SYMED.',
+        `Nome: ${fd.get('nome')}`,
+        fd.get('empresa') ? `Empresa: ${fd.get('empresa')}` : '',
+        fd.get('colaboradores') ? `Colaboradores: ${fd.get('colaboradores')}` : '',
+        fd.getAll('exames[]').length ? `Exames: ${fd.getAll('exames[]').join(', ')}` : '',
+        fd.get('data') ? `Data de preferência: ${fd.get('data').split('-').reverse().join('/')}` : '',
+        fd.get('mensagem') ? `Obs.: ${fd.get('mensagem')}` : ''
+      ].filter(Boolean);
+      return `https://wa.me/${WHATS}?text=${encodeURIComponent(linhas.join('\n'))}`;
+    };
+
+    form.addEventListener('submit', async e => {
+      e.preventDefault();
+      $$('.campo.erro', form).forEach(l => { l.classList.remove('erro'); $('.msg-erro', l)?.remove(); });
+      const nome = form.nome, wpp = form.whatsapp, email = form.email;
+      let ok = true;
+      if (nome.value.trim().length < 3) { erro(nome, 'Informe seu nome completo.'); ok = false; }
+      if (wpp.value.replace(/\D/g, '').length < 10) { erro(wpp, 'Informe um WhatsApp com DDD.'); ok = false; }
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.value.trim())) { erro(email, 'Informe um e-mail válido.'); ok = false; }
+      if (!ok) { $('.campo.erro input', form).focus(); return; }
+
+      const fd = new FormData(form);
+      enviar.disabled = true;
+      enviar.textContent = 'Enviando…';
+      status.className = 'form__status';
+      status.textContent = '';
+      try {
+        const r = await fetch(form.action, { method: 'POST', body: fd, headers: { Accept: 'application/json' } });
+        const j = await r.json().catch(() => ({}));
+        if (!r.ok || !j.ok) throw new Error(j.erro || 'falha');
+        form.reset();
+        soEmpresa.forEach(el => el.hidden = false);
+        status.className = 'form__status ok';
+        status.textContent = 'Solicitação enviada. Vamos retornar pelo WhatsApp para confirmar data e horário.';
+      } catch (err) {
+        status.className = 'form__status falha';
+        status.innerHTML = `Não foi possível enviar agora. <a href="${mensagemWhats(fd)}" target="_blank" rel="noopener">Envie pelo WhatsApp</a> com os dados já preenchidos.`;
+      } finally {
+        enviar.disabled = false;
+        enviar.textContent = 'Enviar solicitação';
+      }
+    });
+  }
+
+  const ano = $('[data-ano]');
+  if (ano) ano.textContent = new Date().getFullYear();
+})();

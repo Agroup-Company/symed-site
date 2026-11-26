@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 500"><defs>
+<linearGradient id="sst" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#2F6FD0"/><stop offset=".55" stop-color="#2A4FB4"/><stop offset="1" stop-color="#3B3FA0"/></linearGradient>
+<linearGradient id="ssn" x1="0" y1="0" x2=".6" y2="1"><stop offset="0" stop-color="#24459E"/><stop offset="1" stop-color="#2C3290"/></linearGradient>
+<linearGradient id="ssb" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#8AA8F0"/><stop offset="1" stop-color="#6E6BD6"/></linearGradient>
+<linearGradient id="ssg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#9BD14B"/><stop offset="1" stop-color="#6EA82A"/></linearGradient>
+<linearGradient id="ssw" x1="0" y1="0" x2="1" y2=".35"><stop offset="0" stop-color="#2F6FD0"/><stop offset=".5" stop-color="#2A4FB4"/><stop offset="1" stop-color="#3B3FA0"/></linearGradient>
+</defs><g transform="translate(-6 0)"><g class="sy-mark">
+<path class="sy-roof" d="M27 168V82L200 22L373 82V168" fill="none" stroke="url(#sst)" stroke-width="19" stroke-linejoin="miter"/>
+<path class="sy-band" d="M50 213Q200 197 350 213C348 300 296 350 200 389C104 350 52 300 50 213Z" fill="url(#ssb)"/>
+<path class="sy-shield" d="M80 205Q200 193 320 205C319 287 279 330 200 362C121 330 81 287 80 205Z" fill="url(#ssn)"/>
+<path class="sy-cross" d="M183 220h36v29h30v35h-30v30h-36v-30h-30v-35h30z" fill="#fff"/>
+<g class="sy-helmet"><path d="M102 180C102 120 146 80 200 78C254 80 298 120 298 180Z" fill="url(#ssg)"/><path d="M181 80c0-9 6-14 19-14s19 5 19 14v30h-38z" fill="url(#ssg)"/><path d="M181 108h38" stroke="rgba(0,0,0,.12)" stroke-width="3"/><path d="M126 160C128 128 146 106 170 96" fill="none" stroke="rgba(255,255,255,.35)" stroke-width="8" stroke-linecap="round"/><rect x="86" y="171" width="236" height="22" rx="11" fill="url(#ssg)"/></g>
+<path class="sy-tube" d="M70 160C42 160 24 182 25 214C27 300 96 368 200 418C304 368 373 300 375 214C376 182 358 160 330 160" fill="none" stroke="url(#sst)" stroke-width="20" stroke-linecap="round"/>
+<path class="sy-tube2" d="M200 418C198 446 208 480 246 486C290 492 322 470 341 440" fill="none" stroke="url(#sst)" stroke-width="18" stroke-linecap="round"/>
+<g class="sy-tips" fill="url(#sst)"><rect x="58" y="148" width="30" height="23" rx="11.5" transform="rotate(-10 73 160)"/><rect x="312" y="148" width="30" height="23" rx="11.5" transform="rotate(10 327 160)"/></g>
+<circle class="sy-chest" cx="370" cy="405" r="38" fill="url(#sst)"/>
+<circle cx="370" cy="405" r="25" fill="#fff" opacity="0.95"/>
+<circle cx="370" cy="405" r="17" fill="url(#ssn)"/>
+</g></g></svg>

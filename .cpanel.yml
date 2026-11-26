@@ -1,0 +1,13 @@
+---
+# Deploy automático pelo cPanel (Git™ Version Control) da HostGator.
+# A cada "Deploy HEAD Commit" no cPanel, os arquivos abaixo são copiados para public_html.
+deployment:
+  tasks:
+    - export DEPLOYPATH=$HOME/public_html/
+    - /bin/mkdir -p $DEPLOYPATH
+    - /bin/cp index.html $DEPLOYPATH
+    - /bin/cp enviar.php $DEPLOYPATH
+    - /bin/cp .htaccess $DEPLOYPATH
+    - /bin/cp robots.txt $DEPLOYPATH
+    - /bin/cp sitemap.xml $DEPLOYPATH
+    - /bin/cp -R assets $DEPLOYPATH
