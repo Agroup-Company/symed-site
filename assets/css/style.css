@@ -635,6 +635,10 @@ ul, ol { margin: 0; padding: 0; list-style: none; }
 .rodape__base { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 12px; padding-top: 24px; color: rgba(255, 255, 255, .5); }
 .rodape__base p { margin: 0; }
 .rodape__base a { color: rgba(255, 255, 255, .8); }
+.rodape__credito { display: flex; align-items: center; gap: 12px; }
+.rodape__credito a { display: block; line-height: 0; }
+.rodape__credito img { height: 26px; width: auto; opacity: .85; transition: opacity .25s; }
+.rodape__credito a:hover img { opacity: 1; }
 @media (max-width: 860px) { .rodape__grid { grid-template-columns: 1fr 1fr; } .rodape__marca { grid-column: 1 / -1; } }
 @media (max-width: 480px) { .rodape__grid { grid-template-columns: 1fr; } }
 
